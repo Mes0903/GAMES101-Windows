@@ -1,0 +1,6 @@
+[submodule "Assignment/3rdparty/Eigen"]
+	path = Assignment/3rdparty/Eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "Assignment/3rdparty/OpenCV"]
+	path = Assignment/3rdparty/OpenCV
+	url = https://github.com/opencv/opencv.git
