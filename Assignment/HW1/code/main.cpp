@@ -1,7 +1,9 @@
+#include <cmath>
+#include <iostream>
+
 #include "Triangle.hpp"
 #include "rasterizer.hpp"
 #include "Eigen/Eigen"
-#include <iostream>
 #include "opencv2/opencv.hpp"
 
 constexpr double MY_PI = 3.1415926;
@@ -25,19 +27,49 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
   // TODO: Implement this function
   // Create the model matrix for rotating the triangle around the Z axis.
   // Then return it.
+  rotation_angle = rotation_angle/180.0 * MY_PI;
+  model(0,0) = std::cos(rotation_angle);
+  model(0,1) = -std::sin(rotation_angle);
+  model(1,0) = std::sin(rotation_angle);
+  model(1,1) = std::cos(rotation_angle);
 
   return model;
 }
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
-  // Students will implement this function
-
   Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
 
   // TODO: Implement this function
   // Create the projection matrix for the given parameters.
   // Then return it.
+  eye_fov = eye_fov / 180.0 * MY_PI;
+  float t = std::tan(eye_fov/2) * std::abs(zNear);
+  float b = -t;
+  float r = t * aspect_ratio;
+  float l = -r;
+
+  // persp->ortho
+  Eigen::Matrix4f Mpo;
+  Mpo << zNear, 0, 0, 0,
+         0, zNear, 0, 0,
+         0, 0, zNear+zFar, -zNear*zFar,
+         0, 0, 1, 0;
+
+  // ortho
+  Eigen::Matrix4f Mo1, Mo2;
+  Mo1 << 2/(r-l), 0, 0, 0,
+         0, 2/(t-b), 0, 0,
+         0, 0, 2/(zNear-zFar), 0,
+         0, 0, 0, 1;
+
+  Mo2 << 1, 0, 0, -(r+l)/2,
+         0, 1, 0, -(t+b)/2,
+         0, 0, 1, -(zNear+zFar)/2,
+         0, 0, 0, 1;
+
+  // persp
+  projection = Mo1 * Mo2 * Mpo;
 
   return projection;
 }
@@ -60,9 +92,9 @@ int main(int argc, const char **argv)
 
   rst::rasterizer r(700, 700);
 
-  Eigen::Vector3f eye_pos = { 0, 0, 5 };
+  Eigen::Vector3f eye_pos = { 0, 0, 5 }; // camera position
 
-  std::vector<Eigen::Vector3f> pos{ { 2, 0, -2 }, { 0, 2, -2 }, { -2, 0, -2 } };
+  std::vector<Eigen::Vector3f> pos{ { 2, 0, -2 }, { 0, 2, -2 }, { -2, 0, -2 } }; // triangle position
 
   std::vector<Eigen::Vector3i> ind{ { 0, 1, 2 } };
 
