@@ -15,3 +15,9 @@ cmake --build . --config Release --target ALL_BUILD -j 8
 ```
 
 目前 Debug 的情況尚有未知原因導致無法建置
+
+# 已實作
+
+- HW0
+- HW1
+- HW2
