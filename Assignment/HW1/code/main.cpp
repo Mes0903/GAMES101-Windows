@@ -53,7 +53,6 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 	// ortho
 	Eigen::Matrix4f Mo1, Mo2;
 	Mo1 << 2 / (r - l), 0, 0, 0, 0, 2 / (t - b), 0, 0, 0, 0, 2 / (zNear - zFar), 0, 0, 0, 0, 1;
-
 	Mo2 << 1, 0, 0, -(r + l) / 2, 0, 1, 0, -(t + b) / 2, 0, 0, 1, -(zNear + zFar) / 2, 0, 0, 0, 1;
 
 	// persp
@@ -77,11 +76,8 @@ int main(int argc, char const** argv) {
 	}
 
 	rst::rasterizer r(700, 700);
-
-	Eigen::Vector3f eye_pos = {0, 0, 5}; // camera position
-
+	Eigen::Vector3f eye_pos = {0, 0, 5};								   // camera position
 	std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}}; // triangle position
-
 	std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
 
 	auto pos_id = r.load_positions(pos);

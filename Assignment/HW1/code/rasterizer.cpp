@@ -1,12 +1,12 @@
 //
 // Created by goksu on 4/6/19.
 //
-
-#include "rasterizer.hpp"
 #include <math.h>
 #include <algorithm>
 #include <stdexcept>
+
 #include "opencv2/opencv.hpp"
+#include "rasterizer.hpp"
 
 rst::pos_buf_id rst::rasterizer::load_positions(std::vector<Eigen::Vector3f> const& positions) {
 	auto id = get_next_id();
