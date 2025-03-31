@@ -47,3 +47,4 @@ set(OpenCV_BIN_DIR ${CMAKE_BINARY_DIR}/opencv-install/x64/vc17/bin)
 # Add subdirectories for homework assignments
 add_subdirectory(HW0/code)
 add_subdirectory(HW1/code)
+add_subdirectory(HW2/code)
