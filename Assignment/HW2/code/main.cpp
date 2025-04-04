@@ -24,8 +24,20 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle) {
 }
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar) {
+	/* clang-format off */
 	Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
 
+	// Since the OpenGL coordinate system is right-handed, we need to flip the z axis.
+	// See more: https://zhuanlan.zhihu.com/p/509902950
+	zNear = -zNear;
+	zFar = -zFar;
+
+	const float n = zNear;
+	const float f = zFar;
+
+	// TODO: Implement this function
+	// Create the projection matrix for the given parameters.
+	// Then return it.
 	eye_fov = eye_fov / 180.0 * MY_PI;
 	float t = std::tan(eye_fov / 2) * std::abs(zNear);
 	float b = -t;
@@ -34,17 +46,39 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 
 	// persp->ortho
 	Eigen::Matrix4f Mpo;
-	Mpo << zNear, 0, 0, 0, 0, zNear, 0, 0, 0, 0, zNear + zFar, -zNear * zFar, 0, 0, 1, 0;
+	Mpo << n, 0, 0, 0,
+			   0, n, 0, 0,
+				 0, 0, n + f, -n * f,
+				 0, 0, 1, 0;
 
 	// ortho
 	Eigen::Matrix4f Mo1, Mo2;
-	Mo1 << 2 / (r - l), 0, 0, 0, 0, 2 / (t - b), 0, 0, 0, 0, 2 / (zNear - zFar), 0, 0, 0, 0, 1;
-	Mo2 << 1, 0, 0, -(r + l) / 2, 0, 1, 0, -(t + b) / 2, 0, 0, 1, -(zNear + zFar) / 2, 0, 0, 0, 1;
+	Mo1 << 2 / (r - l), 0, 0, 0,
+				 0, 2 / (t - b), 0, 0, 
+				 0, 0, 2 / (n - f), 0,
+				 0, 0, 0, 1;
+	Mo2 << 1, 0, 0, -(r + l) / 2,
+				 0, 1, 0, -(t + b) / 2,
+				 0, 0, 1, -(n + f) / 2,
+				 0, 0, 0, 1;
 
 	// persp
 	projection = Mo1 * Mo2 * Mpo;
 
+	// or directory set the projection matrix
+	// Eigen::Matrix4f projection2;
+	// projection2 << 2 * n / (r - l), 0, -(r + l) / (r - l), 0,
+	// 							 0, 2 * n / (t - b), -(t + b) / (t - b), 0,
+	// 							 0, 0, (n + f) / (n - f), -2 * n * f / (n - f),
+	// 							 0, 0, 1, 0;
+	// projection = projection2;
+
+	Eigen::Matrix4f FlipZ = Eigen::Matrix4f::Identity();
+	FlipZ(2, 2) = -1;
+	projection = FlipZ * projection;
+
 	return projection;
+	/* clang-format on */
 }
 
 int main(int argc, char const** argv) {
