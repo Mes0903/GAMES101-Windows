@@ -9,6 +9,13 @@
 #include "Triangle.hpp"
 #include "global.hpp"
 
+#define SSAA
+
+#if defined(SSAA) || defined(MSAA)
+#define MULTISAMPLE_X 4
+#define MULTISAMPLE_Y 4
+#endif
+
 using namespace Eigen;
 
 namespace rst {
@@ -73,8 +80,21 @@ class rasterizer {
 	std::map<int, std::vector<Eigen::Vector3f>> col_buf;
 
 	std::vector<Eigen::Vector3f> frame_buf;
-
 	std::vector<float> depth_buf;
+
+#if defined(SSAA) || defined(MSAA)
+	void resolve_buffer();
+	int get_ss_index(int sx, int sy);
+#if defined(SSAA)
+	// For SSAA, store per-sample colors (and depths) for each pixel.
+	std::vector<std::array<Eigen::Vector3f, MULTISAMPLE_X * MULTISAMPLE_Y>> ss_frame_buf;
+	std::vector<std::array<float, MULTISAMPLE_X * MULTISAMPLE_Y>> ss_depth_buf;
+#else
+	// For MSAA, we only need a per-sample depth buffer; the color will be written directly into frame_buf.
+	std::vector<std::array<float, MULTISAMPLE_X * MULTISAMPLE_Y>> ss_depth_buf;
+#endif
+#endif
+
 	int get_index(int x, int y);
 
 	int width, height;
