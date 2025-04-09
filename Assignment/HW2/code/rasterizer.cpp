@@ -42,18 +42,16 @@ int rst::rasterizer::get_ss_index(int sx, int sy) { return sy * MULTISAMPLE_Y + 
 // Resolve the supersample buffer into the final frame buffer.
 // For SSAA, we average all the per-sample colors into one final pixel color;
 // for MSAA we assume the final color is already set during rasterization.
-void rst::rasterizer::resolve_buffer() {
 #if defined(SSAA)
+void rst::rasterizer::resolve_ssaa_buffer() {
 	int total_samples = MULTISAMPLE_X * MULTISAMPLE_Y;
 	for (size_t i = 0; i < frame_buf.size(); i++) {
 		Eigen::Vector3f color_sum(0, 0, 0);
 		for (int s = 0; s < total_samples; s++) { color_sum += ss_frame_buf[i][s]; }
 		frame_buf[i] = color_sum / total_samples;
 	}
-#elif defined(MSAA)
-	// TODO: MSAA
-#endif
 }
+#endif
 #endif
 
 rst::pos_buf_id rst::rasterizer::load_positions(std::vector<Eigen::Vector3f> const& positions) {
@@ -107,8 +105,8 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 		rasterize_triangle(t);
 	}
 
-#if defined(SSAA) || defined(MSAA)
-	resolve_buffer(); // Resolve the supersample buffer after rasterization.
+#if defined(SSAA)
+	resolve_ssaa_buffer(); // Resolve the supersample buffer after rasterization.
 #endif
 }
 
@@ -125,7 +123,7 @@ void rst::rasterizer::rasterize_triangle(Triangle const& t) {
 	for (int x = min_x; x <= max_x; ++x) {
 		for (int y = min_y; y <= max_y; ++y) {
 
-#if defined(MSAA) || defined(SSAA)
+#if defined(SSAA)
 			/*
 			 * For black edge problem, check the following link
 			 * https://zhuanlan.zhihu.com/p/454001952
@@ -135,8 +133,8 @@ void rst::rasterizer::rasterize_triangle(Triangle const& t) {
 			int pixel_index = get_index(x, y);
 			for (int sx = 0; sx < MULTISAMPLE_X; ++sx) {
 				for (int sy = 0; sy < MULTISAMPLE_Y; ++sy) {
-					float sampleX = x + sx + (1 / 2 * MULTISAMPLE_X);
-					float sampleY = y + sy + (1 / 2 * MULTISAMPLE_Y);
+					float sampleX = x + sx * (1 / (float)MULTISAMPLE_X) + (1 / 2 * (float)MULTISAMPLE_X);
+					float sampleY = y + sy * (1 / (float)MULTISAMPLE_Y) + (1 / 2 * (float)MULTISAMPLE_Y);
 					if (insideTriangle(sampleX, sampleY, t.v)) {
 						auto [alpha, beta, gamma] = computeBarycentric2D(sampleX, sampleY, t.v);
 						float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
@@ -145,12 +143,38 @@ void rst::rasterizer::rasterize_triangle(Triangle const& t) {
 						int sample_index = get_ss_index(sx, sy);
 						if (z_interpolated < ss_depth_buf[pixel_index][sample_index]) {
 							ss_depth_buf[pixel_index][sample_index] = z_interpolated;
-#if defined(SSAA)
-							// In SSAA mode, store the color for each subpixel.
 							ss_frame_buf[pixel_index][sample_index] = t.getColor();
-#endif
 						}
 					}
+				}
+			}
+#elif defined(MSAA)
+			if (insideTriangle(x + 0.5, y + 0.5, t.v)) {
+				int cnt = 0;
+				int pixel_index = get_index(x, y);
+				float min_depth = std::numeric_limits<float>::infinity();
+				for (int sx = 0; sx < MULTISAMPLE_X; ++sx) {
+					for (int sy = 0; sy < MULTISAMPLE_Y; ++sy) {
+						float sampleX = x + sx * (1 / (float)MULTISAMPLE_X) + (1 / 2 * (float)MULTISAMPLE_X);
+						float sampleY = y + sy * (1 / (float)MULTISAMPLE_Y) + (1 / 2 * (float)MULTISAMPLE_Y);
+						if (insideTriangle(sampleX, sampleY, t.v)) {
+							auto [alpha, beta, gamma] = computeBarycentric2D(sampleX, sampleY, t.v);
+							float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+							float z_interpolated = (alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w()) * w_reciprocal;
+
+							int sample_index = get_ss_index(sx, sy);
+							if (z_interpolated < ss_depth_buf[pixel_index][sample_index]) {
+								cnt++;
+								ss_depth_buf[pixel_index][sample_index] = z_interpolated;
+								min_depth = std::min(min_depth, z_interpolated); // Store the minimum depth as the final depth for depth buffer.
+							}
+						}
+					}
+				}
+
+				if (min_depth < depth_buf[pixel_index]) {
+					depth_buf[pixel_index] = min_depth;
+					frame_buf[pixel_index] = t.getColor() * (float)cnt / (MULTISAMPLE_X * MULTISAMPLE_Y);
 				}
 			}
 #else

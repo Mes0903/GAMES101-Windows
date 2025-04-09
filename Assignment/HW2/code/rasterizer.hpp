@@ -83,12 +83,12 @@ class rasterizer {
 	std::vector<float> depth_buf;
 
 #if defined(SSAA) || defined(MSAA)
-	void resolve_buffer();
 	int get_ss_index(int sx, int sy);
 #if defined(SSAA)
 	// For SSAA, store per-sample colors (and depths) for each pixel.
 	std::vector<std::array<Eigen::Vector3f, MULTISAMPLE_X * MULTISAMPLE_Y>> ss_frame_buf;
 	std::vector<std::array<float, MULTISAMPLE_X * MULTISAMPLE_Y>> ss_depth_buf;
+	void resolve_ssaa_buffer();
 #else
 	// For MSAA, we only need a per-sample depth buffer; the color will be written directly into frame_buf.
 	std::vector<std::array<float, MULTISAMPLE_X * MULTISAMPLE_Y>> ss_depth_buf;
