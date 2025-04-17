@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/Eigen)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-add_executable(${PROJECT_NAME} main.cpp rasterizer.hpp rasterizer.cpp Triangle.cpp Texture.cpp)
+add_executable(${PROJECT_NAME} main.cpp rasterizer.hpp rasterizer.cpp Triangle.cpp)
 add_dependencies(${PROJECT_NAME} opencv)
 set(OpenCV_VERSION 4100)
 
